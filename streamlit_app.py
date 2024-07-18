@@ -18,12 +18,15 @@ class YouTubeDownloader:
                 video = YouTube(url)
                 self.download_video(video)
         except Exception as e:
-            st.error(f"Error: {e}")
+            st.error(f"Error with URL {url}: {e}")
 
     def download_video(self, video):
-        stream = video.streams.filter(only_audio=True).first()
-        sanitized_title = self.sanitize_filename(video.title)
-        stream.download(output_path=self.save_path, filename=f"{sanitized_title}.mp3")
+        try:
+            stream = video.streams.filter(only_audio=True).first()
+            sanitized_title = self.sanitize_filename(video.title)
+            stream.download(output_path=self.save_path, filename=f"{sanitized_title}.mp3")
+        except Exception as e:
+            st.error(f"Error downloading video {video.title}: {e}")
 
     def sanitize_filename(self, filename):
         return re.sub(r'[<>:"/\\|?*]', '', filename)
@@ -52,7 +55,7 @@ def main():
         status_text = st.empty()
 
         with ThreadPoolExecutor() as executor:
-            futures = [executor.submit(downloader.download_url, url) for url in url_list]
+            futures = {executor.submit(downloader.download_url, url): url for url in url_list}
             for i, future in enumerate(futures):
                 future.result()  # Wait for all downloads to complete
                 progress = int((i + 1) / len(url_list) * 100)
