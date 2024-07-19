@@ -1,6 +1,7 @@
 import datetime as dt
 import time as tm
 import yfinance as yf
+import streamlit as st
 
 # Current date
 date_now = tm.strftime('%Y-%m-%d')
