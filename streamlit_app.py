@@ -29,23 +29,22 @@ st.title("YouTube Audio Downloader")
 
 url = st.text_input("Paste YouTube link here:")
 
-if st.button("Download Audio"):
-    if url:
-        with st.spinner("Downloading..."):
-            file_path, message = download_audio(url)
-        
-        if file_path:
-            st.success(f"Successfully downloaded: {message}")
-            with open(file_path, "rb") as audio_file:
-                st.download_button(
-                    label="Download Audio File",
-                    data=audio_file,
-                    file_name=os.path.basename(file_path),
-                    mime="audio/mpeg"
-                )
-        else:
-            st.error(f"An error occurred: {message}")
+if url:
+    with st.spinner("Downloading..."):
+        file_path, message = download_audio(url)
+    
+    if file_path:
+        st.success(f"Successfully downloaded: {message}")
+        with open(file_path, "rb") as audio_file:
+            st.download_button(
+                label="Download Audio File",
+                data=audio_file,
+                file_name=os.path.basename(file_path),
+                mime="audio/mpeg"
+            )
+        # Optionally, remove the file after download
+        # os.remove(file_path)
     else:
-        st.warning("Please enter a YouTube link.")
+        st.error(f"An error occurred: {message}")
 
 st.write("Note: This app downloads audio for personal use only. Respect copyright laws.")
