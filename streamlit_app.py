@@ -24,23 +24,23 @@ def hollow_rectangle_properties(outer_length, outer_width, inner_length, inner_w
 st.title("Hollow Shape Calculator")
 
 st.header("Hollow Cylinder")
-outer_diameter = st.number_input("Outer Diameter (D)", min_value=0.0, format="%.2f")
-inner_diameter = st.number_input("Inner Diameter (d)", min_value=0.0, format="%.2f")
-cylinder_height = st.number_input("Height (h)", min_value=0.0, format="%.2f")
+outer_diameter = st.number_input("Outer Diameter (D) in mm", min_value=0.0, format="%.2f", key="outer_diameter")
+inner_diameter = st.number_input("Inner Diameter (d) in mm", min_value=0.0, format="%.2f", key="inner_diameter")
+cylinder_height = st.number_input("Height (h) in mm", min_value=0.0, format="%.2f", key="cylinder_height")
 
-if st.button("Calculate Cylinder Properties"):
+if st.button("Calculate Cylinder Properties", key="calculate_cylinder"):
     cylinder_volume, cylinder_surface_area = hollow_cylinder_properties(outer_diameter, inner_diameter, cylinder_height)
-    st.write(f"Volume: {cylinder_volume:.2f}")
-    st.write(f"Surface Area: {cylinder_surface_area:.2f}")
+    st.write(f"Volume: {cylinder_volume:.2f} mm³")
+    st.write(f"Surface Area: {cylinder_surface_area:.2f} mm²")
 
 st.header("Hollow Rectangle")
-outer_length = st.number_input("Outer Length (L)", min_value=0.0, format="%.2f")
-outer_width = st.number_input("Outer Width (W)", min_value=0.0, format="%.2f")
-inner_length = st.number_input("Inner Length (l)", min_value=0.0, format="%.2f")
-inner_width = st.number_input("Inner Width (w)", min_value=0.0, format="%.2f")
-rectangle_height = st.number_input("Height (h)", min_value=0.0, format="%.2f")
+outer_length = st.number_input("Outer Length (L) in mm", min_value=0.0, format="%.2f", key="outer_length")
+outer_width = st.number_input("Outer Width (W) in mm", min_value=0.0, format="%.2f", key="outer_width")
+inner_length = st.number_input("Inner Length (l) in mm", min_value=0.0, format="%.2f", key="inner_length")
+inner_width = st.number_input("Inner Width (w) in mm", min_value=0.0, format="%.2f", key="inner_width")
+rectangle_height = st.number_input("Height (h) in mm", min_value=0.0, format="%.2f", key="rectangle_height")
 
-if st.button("Calculate Rectangle Properties"):
+if st.button("Calculate Rectangle Properties", key="calculate_rectangle"):
     rectangle_volume, rectangle_surface_area = hollow_rectangle_properties(outer_length, outer_width, inner_length, inner_width, rectangle_height)
-    st.write(f"Volume: {rectangle_volume:.2f}")
-    st.write(f"Surface Area: {rectangle_surface_area:.2f}")
+    st.write(f"Volume: {rectangle_volume:.2f} mm³")
+    st.write(f"Surface Area: {rectangle_surface_area:.2f} mm²")
