@@ -25,10 +25,11 @@ class YouTubeDownloader:
         try:
             stream = video.streams.filter(only_audio=True).first()
             sanitized_title = self.sanitize_filename(video.title)
-            buffer = BytesIO()
-            stream.stream_to_buffer(buffer)
-            buffer.seek(0)
-            self.files.append((f"{sanitized_title}.mp3", buffer.read()))
+            temp_path = os.path.join("/tmp", f"{sanitized_title}.mp3")
+            stream.download(output_path="/tmp", filename=f"{sanitized_title}.mp3")
+            with open(temp_path, "rb") as f:
+                self.files.append((f"{sanitized_title}.mp3", f.read()))
+            os.remove(temp_path)
         except Exception as e:
             st.error(f"Error downloading video {video.title}: {e}")
 
