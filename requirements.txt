@@ -4,3 +4,4 @@ yt_dlp
 moviepy
 yfinance
 pandas
+bs4
