@@ -1,91 +1,62 @@
 import streamlit as st
-import re
 from pytube import YouTube, Playlist
-import io
+import re
+from concurrent.futures import ThreadPoolExecutor
+import os
 
-class YouTubeDownloader:
-    def __init__(self):
-        pass
-        
-    def download_url(self, url):
-        try:
-            if 'playlist' in url:
-                playlist = Playlist(url)
-                for video in playlist.videos:
-                    yield self.download_video(video)
-            else:
-                video = YouTube(url)
-                yield self.download_video(video)
-        except Exception as e:
-            st.error(f"Error with URL {url}: {e}")
+# Function to sanitize filenames
+def sanitize_filename(filename):
+    return re.sub(r'[<>:"/\\|?*]', '', filename)
 
-    def download_video(self, video):
-        try:
-            stream = video.streams.filter(only_audio=True).first()
-            buffer = io.BytesIO()
-            stream.stream_to_buffer(buffer)
-            buffer.seek(0)
-            sanitized_title = self.sanitize_filename(video.title)
-            return sanitized_title, buffer.getvalue()
-        except Exception as e:
-            st.error(f"Error downloading video {video.title}: {e}")
-            return None, None
+# Function to download video as audio
+def download_video(video, save_path):
+    stream = video.streams.filter(only_audio=True).first()
+    sanitized_title = sanitize_filename(video.title)
+    filepath = os.path.join(save_path, f"{sanitized_title}.mp3")
+    stream.download(output_path=save_path, filename=f"{sanitized_title}.mp3")
+    return filepath
 
-    def sanitize_filename(self, filename):
-        return re.sub(r'[<>:"/\\|?*]', '', filename)
+# Function to download URL
+def download_url(url, save_path):
+    try:
+        if 'playlist' in url:
+            playlist = Playlist(url)
+            return [download_video(video, save_path) for video in playlist.videos]
+        else:
+            video = YouTube(url)
+            return [download_video(video, save_path)]
+    except Exception as e:
+        st.error(f"Error: {e}")
+        return []
 
-@st.cache_data
-def cached_download_video(video):
-    downloader = YouTubeDownloader()
-    return downloader.download_video(video)
+# Streamlit UI
+st.title('YouTube Downloader')
 
-def main():
-    st.title("YouTube MP3 Downloader")
+url_input = st.text_area('Enter YouTube URL(s) (one per line or playlist URL):', height=150)
+save_path = st.text_input('Enter Save Location:', value=os.getcwd())
+download_button = st.button('Download MP3')
 
-    urls = st.text_area("Enter YouTube URL(s) (one per line or playlist URL):", height=100)
+if download_button:
+    urls = url_input.strip().split('\n')
+    urls = [url.strip() for url in urls if url.strip()]
 
-    if st.button("Download MP3"):
-        if not urls.strip():
-            st.error("Please enter at least one YouTube URL")
-            return
+    if not urls:
+        st.error("Please enter at least one YouTube URL")
+    elif not save_path:
+        st.error("Please enter a save location")
+    else:
+        with st.spinner('Downloading...'):
+            with ThreadPoolExecutor() as executor:
+                futures = [executor.submit(download_url, url, save_path) for url in urls]
+                results = []
+                for future in futures:
+                    results.extend(future.result())
 
-        url_list = [url.strip() for url in urls.strip().split('\n') if url.strip()]
+            st.success("Download complete")
 
-        progress_bar = st.progress(0)
-        status_text = st.empty()
+        # Provide download links for each file
+        for result in results:
+            if result:
+                for file in result:
+                    st.markdown(f"[Download {os.path.basename(file)}](file://{file})")
 
-        downloader = YouTubeDownloader()
-
-        for i, url in enumerate(url_list):
-            if 'playlist' in url:
-                playlist = Playlist(url)
-                for j, video in enumerate(playlist.videos):
-                    title, audio_data = cached_download_video(video)
-                    if title and audio_data:
-                        st.download_button(
-                            label=f"Download {title}.mp3",
-                            data=audio_data,
-                            file_name=f"{title}.mp3",
-                            mime="audio/mpeg"
-                        )
-                    progress = int((i + (j+1)/len(playlist.videos)) / len(url_list) * 100)
-                    progress_bar.progress(progress)
-                    status_text.text(f"Downloading... {progress}%")
-            else:
-                video = YouTube(url)
-                title, audio_data = cached_download_video(video)
-                if title and audio_data:
-                    st.download_button(
-                        label=f"Download {title}.mp3",
-                        data=audio_data,
-                        file_name=f"{title}.mp3",
-                        mime="audio/mpeg"
-                    )
-                progress = int((i + 1) / len(url_list) * 100)
-                progress_bar.progress(progress)
-                status_text.text(f"Downloading... {progress}%")
-
-        st.success("Download complete")
-
-if __name__ == "__main__":
-    main()
