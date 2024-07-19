@@ -20,6 +20,7 @@ class YouTubeDownloader:
         except Exception as e:
             st.error(f"Error with URL {url}: {e}")
 
+    @st.cache_data
     def download_video(self, video):
         try:
             stream = video.streams.filter(only_audio=True).first()
@@ -27,9 +28,10 @@ class YouTubeDownloader:
             stream.stream_to_buffer(buffer)
             buffer.seek(0)
             sanitized_title = self.sanitize_filename(video.title)
-            self.downloaded_files.append((f"{sanitized_title}.mp3", buffer))
+            return sanitized_title, buffer.getvalue()
         except Exception as e:
             st.error(f"Error downloading video {video.title}: {e}")
+            return None, None
 
     def sanitize_filename(self, filename):
         return re.sub(r'[<>:"/\\|?*]', '', filename)
@@ -51,24 +53,24 @@ def main():
         progress_bar = st.progress(0)
         status_text = st.empty()
 
-        with ThreadPoolExecutor() as executor:
-            futures = {executor.submit(downloader.download_url, url): url for url in url_list}
-            for i, future in enumerate(futures):
-                future.result()  # Wait for all downloads to complete
-                progress = int((i + 1) / len(url_list) * 100)
-                progress_bar.progress(progress)
-                status_text.text(f"Downloading... {progress}%")
+        for i, url in enumerate(url_list):
+            downloader.download_url(url)
+            progress = int((i + 1) / len(url_list) * 100)
+            progress_bar.progress(progress)
+            status_text.text(f"Downloading... {progress}%")
 
         st.success("Download complete")
 
         # Create download buttons for each downloaded file
-        for filename, file_buffer in downloader.downloaded_files:
-            st.download_button(
-                label=f"Download {filename}",
-                data=file_buffer,
-                file_name=filename,
-                mime="audio/mpeg"
-            )
+        for video in YouTube(url) if 'playlist' not in url else Playlist(url).videos:
+            title, audio_data = downloader.download_video(video)
+            if title and audio_data:
+                st.download_button(
+                    label=f"Download {title}.mp3",
+                    data=audio_data,
+                    file_name=f"{title}.mp3",
+                    mime="audio/mpeg"
+                )
 
 if __name__ == "__main__":
     main()
