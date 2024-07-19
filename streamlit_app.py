@@ -1,4 +1,8 @@
 import streamlit as st
+import yfinance as yf
+
+
+df = yf.download('AAPL')
 
 @st.cache_data
 def convert_df(df):
