@@ -10,7 +10,7 @@ start = (dt.date.today() - dt.timedelta(days=1104)).strftime('%Y-%m-%d')
 
 
 df = yf.download('AAPL', start=start , end=date_now)
-df = pd.to_csv(df)
+df = df.to_csv()
 
 st.download_button(
     label="Download data as CSV",
