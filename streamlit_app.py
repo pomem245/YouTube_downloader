@@ -15,6 +15,9 @@ def download_audio(link):
         if info_dict:
             video_title = info_dict.get('title', 'Unknown Title')
             st.write(f"Successfully downloaded: {video_title}")
+            with open(f"{video_title}.mp3", "rb") as file:
+                audio_data = file.read()
+                st.download_button("Download Audio", audio_data, file_name=f"{video_title}.mp3", mime="audio/mpeg")
         else:
             st.write("There was an error downloading the audio.")
 
