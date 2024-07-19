@@ -1,14 +1,13 @@
 import streamlit as st
 import re
 from pytube import YouTube, Playlist
-import os
+import io
 from concurrent.futures import ThreadPoolExecutor
-from io import BytesIO
 
 class YouTubeDownloader:
     def __init__(self):
-        self.files = []
-
+        self.downloaded_files = []
+        
     def download_url(self, url):
         try:
             if 'playlist' in url:
@@ -24,12 +23,11 @@ class YouTubeDownloader:
     def download_video(self, video):
         try:
             stream = video.streams.filter(only_audio=True).first()
+            buffer = io.BytesIO()
+            stream.stream_to_buffer(buffer)
+            buffer.seek(0)
             sanitized_title = self.sanitize_filename(video.title)
-            temp_path = os.path.join("/tmp", f"{sanitized_title}.mp3")
-            stream.download(output_path="/tmp", filename=f"{sanitized_title}.mp3")
-            with open(temp_path, "rb") as f:
-                self.files.append((f"{sanitized_title}.mp3", f.read()))
-            os.remove(temp_path)
+            self.downloaded_files.append((f"{sanitized_title}.mp3", buffer))
         except Exception as e:
             st.error(f"Error downloading video {video.title}: {e}")
 
@@ -63,11 +61,14 @@ def main():
 
         st.success("Download complete")
 
-        for filename, file_content in downloader.files:
-            st.download_button(label=f"Download {filename}",
-                               data=file_content,
-                               file_name=filename,
-                               mime='audio/mpeg')
+        # Create download buttons for each downloaded file
+        for filename, file_buffer in downloader.downloaded_files:
+            st.download_button(
+                label=f"Download {filename}",
+                data=file_buffer,
+                file_name=filename,
+                mime="audio/mpeg"
+            )
 
 if __name__ == "__main__":
     main()
