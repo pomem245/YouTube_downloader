@@ -1,7 +1,7 @@
 import streamlit as st
 import re
-from pytube import YouTube, Playlist
 import os
+import yt_dlp
 from concurrent.futures import ThreadPoolExecutor
 
 class YouTubeDownloader:
@@ -12,22 +12,24 @@ class YouTubeDownloader:
         
     def download_url(self, url):
         try:
-            if 'playlist' in url:
-                playlist = Playlist(url)
-                for video in playlist.videos:
-                    self.download_video(video)
-            else:
-                video = YouTube(url)
-                self.download_video(video)
+            ydl_opts = {
+                'format': 'bestaudio/best',
+                'postprocessors': [{
+                    'key': 'FFmpegExtractAudio',
+                    'preferredcodec': 'mp3',
+                    'preferredquality': '192',
+                }],
+                'outtmpl': os.path.join(self.save_path, '%(title)s.%(ext)s'),
+            }
+            
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(url, download=True)
+                filename = ydl.prepare_filename(info)
+                mp3_filename = os.path.splitext(filename)[0] + '.mp3'
+                return mp3_filename
         except Exception as e:
-            st.error(f"Error: {e}")
-
-    def download_video(self, video):
-        stream = video.streams.filter(only_audio=True).first()
-        sanitized_title = self.sanitize_filename(video.title)
-        file_path = os.path.join(self.save_path, f"{sanitized_title}.mp3")
-        stream.download(output_path=self.save_path, filename=f"{sanitized_title}.mp3")
-        return file_path
+            st.error(f"Error downloading {url}: {str(e)}")
+            return None
 
     def sanitize_filename(self, filename):
         return re.sub(r'[<>:"/\\|?*]', '', filename)
@@ -37,7 +39,7 @@ def main():
 
     downloader = YouTubeDownloader()
 
-    urls = st.text_area("Enter YouTube URL(s) (one per line or playlist URL):", placeholder="Enter URLs here...")
+    urls = st.text_area("Enter YouTube URL(s) (one per line):", placeholder="Enter URLs here...")
     
     if st.button("Download MP3"):
         if not urls:
